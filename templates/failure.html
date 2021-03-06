@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>EdTab Auth Failure</title>
+</head>
+<body>
+    {{ reason|tojson }}
+    <script src='https://statics.teams.cdn.office.net/sdk/v1.6.0/js/MicrosoftTeams.min.js' crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        microsoftTeams.initialize();
+        let reason_json = {{ reason|tojson }};
+        microsoftTeams.authentication.notifyFailure(reason=JSON.parse(reason_json));
+    </script>
+</body>
+</html>

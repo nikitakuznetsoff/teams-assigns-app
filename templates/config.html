@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EdTab Config Page</title>
+    <script src='https://statics.teams.cdn.office.net/sdk/v1.6.0/js/MicrosoftTeams.min.js'></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+</head>
+<body>
+    <button onclick="continueClick()">Click for continue</button>
+    <script>
+        microsoftTeams.initialize();
+        let saveSettings = () => {
+            microsoftTeams.settings.registerOnSaveHandler((saveEvent) => {
+                microsoftTeams.settings.setSettings({
+                    websiteUrl: "{{ base_uri }}",
+                    contentUrl: "{{ base_uri }}",
+                    suggestedDisplayName: "EdTab"
+                });
+                saveEvent.notifySuccess();
+            });
+        }
+        const continueClick = () => {
+            microsoftTeams.settings.setValidityState(true);
+            saveSettings();
+        }
+    </script>
+</body>
+</html>

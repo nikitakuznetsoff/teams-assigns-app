@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>EdTab Authorization</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+    </head>
+    <body>
+        <nav class="level my-5 mx-5">
+            <div class="level-left">
+                <div class="level-item has-text-centered">
+                    <a class="link is-info" href="{{ base_uri }}">Home</a>
+                </div>
+                <div class="level-item has-text-centered">
+                    <a class="link is-info" href="{{ base_uri + "/settings" }}">Settings</a>
+                </div>
+                <div class="level-item has-text-centered">
+                    <a class="link is-info" href="{{ base_uri + "/logout" }}">Logout</a>
+                </div>
+            </div>
+            <div class="level-right">
+                <div class="level-item has-text-centered">
+                    <a class="button is-success" href="{{ base_uri + "/sync" }}">Synchronize assignments</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="section has-text-centered">
+            <p class="title is-3">Assignments</p>
+        </div>
+
+        <div class="columns is-centered">
+            <div class="column is-half">
+            {% for assignment in assignments %}
+                <article class="message is-info">
+                    <div class="message-header">
+                        <p>{{ assignment['displayName'] }}</p>
+                    </div>
+                    <div class="message-body">
+                        <p><strong>Due date:</strong> {{ assignment['dueDateTime'] }}</p>
+                    </div>
+                </article>
+            {% endfor %}
+            </div>
+        </div>
+
+    </body>
+</html>

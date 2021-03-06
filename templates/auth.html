@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>EdTab Authorization</title>
+        <script src='https://statics.teams.cdn.office.net/sdk/v1.6.0/js/MicrosoftTeams.min.js' crossorigin="anonymous"></script>
+        <script src="https://code.jquery.com/jquery-3.1.1.js" integrity="sha384-VC7EHu0lDzZyFfmjTPJq+DFyIn8TUGAJbEtpXquazFVr00Q/OOx//RjiZ9yU9+9m" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.1/css/bulma.min.css">
+    </head>
+    <body>
+        <div class="columns is-centered">
+            <div class="column is-half">
+                <section class="section has-text-centered">
+                    <p class="title is-2 has-text-centered">Welcome to EdTab!</p>
+                    <p class="subtitle is-5">
+                        EdTab is your tool to synchronize the assignments with your Learning Management System (LMS)
+                    </p>
+                    <button class="button is-success is-info" onclick="login()">Sign in</button>
+                </section>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            microsoftTeams.initialize();
+            function auth(url) {
+                microsoftTeams.authentication.authenticate({
+                    url: url,
+                    width: 600,
+                    height: 535,
+                    successCallback: function (result) {
+                        console.log("Login succeed: " + result);
+                        microsoftTeams.getContext(function (context) {
+                            console.log(context.groupId)
+                            $.post(url="/context", {
+                                group_id: context.groupId
+                            }, function (data, textStatus, jdXHR) {
+                                document.location.reload();
+                            });
+                        });
+                    },
+                    failureCallback: function (reason) {
+                        console.log("Login failure: " + reason);
+                    }
+                });
+            }
+            function login() {
+                auth("{{ base_uri + "/login" }}");
+            }
+        </script>
+    </body>
+</html>

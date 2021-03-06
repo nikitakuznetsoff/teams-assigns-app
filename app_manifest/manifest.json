@@ -1,0 +1,45 @@
+{
+    "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.8/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.8",
+    "version": "1.0.0",
+    "id": "ce8198b0-9fa8-40cc-b7f5-87f383119475",
+    "packageName": "com.microsoft.teams.edtab",
+    "developer": {
+        "name": "NikitaKuznetsov",
+        "websiteUrl": "https://4a5a815768e7.ngrok.io",
+        "privacyUrl": "https://4a5a815768e7.ngrok.io/privacy",
+        "termsOfUseUrl": "https://4a5a815768e7.ngrok.io/termsofuse"
+    },
+    "icons": {
+        "color": "color.png",
+        "outline": "outline.png"
+    },
+    "name": {
+        "short": "EdTab",
+        "full": "Tab for assignments synchronization"
+    },
+    "description": {
+        "short": "EdTabApp",
+        "full": "Tab for assignments synchronization."
+    },
+    "accentColor": "#FFFFFF",
+    "configurableTabs": [
+        {
+            "configurationUrl": "https://4a5a815768e7.ngrok.io/config",
+            "canUpdateConfiguration": true,
+            "scopes": [
+                "team"
+            ],
+            "context": [
+                "channelTab"
+            ]
+        }
+    ],
+    "permissions": [
+        "identity",
+        "messageTeamMembers"
+    ],
+    "validDomains": [
+        "4a5a815768e7.ngrok.io"
+    ]
+}
