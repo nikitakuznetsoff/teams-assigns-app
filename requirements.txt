@@ -1,0 +1,8 @@
+flask
+flask_session
+sqlalchemy
+Jinja2
+Werkzeug
+requests
+itsdangerous
+msal
