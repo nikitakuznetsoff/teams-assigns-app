@@ -7,11 +7,9 @@ SCOPE = ["https://graph.microsoft.com/.default"]
 AUTHORITY = "https://login.microsoftonline.com/"+TENANT
 # AUTHORIZE_ENDPOINT = "/oauth2/v2.0/authorize"
 # TOKEN_ENDPOINT = "/oauth2/v2.0/token"
-# BASE_URI = "https://beba1f0b5c78.ngrok.io"
-BASE_URI = "https://d5d8c4c71d03.ngrok.io"
-# REQUEST_URI = "https://beba1f0b5c78.ngrok.io/token"
-REQUEST_URI = "https://d5d8c4c71d03.ngrok.io/token"
-SYNC_URI = "https://localhost:9001/sync"
+BASE_URI = "https://f339d1a60a00.ngrok.io"
+REQUEST_URI = "https://f339d1a60a00.ngrok.io/token"
+SYNC_URI = "https://f339d1a60a00.ngrok.io/sync"
 
 SESSION_TYPE = "filesystem"
 SESSION_COOKIE_SECURE = True

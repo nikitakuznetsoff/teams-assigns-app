@@ -12,9 +12,6 @@ from itsdangerous import want_bytes
 app = Flask(__name__)
 app.config.from_object(app_config)
 
-# from werkzeug.middleware.proxy_fix import ProxyFix
-# app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
-
 
 class CustomFileSystemSessionInterface(FileSystemSessionInterface):
     def save_session(self, app, session, response):
