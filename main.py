@@ -2,7 +2,7 @@ import os
 import requests
 import uuid
 import msal
-import app_config
+import config
 
 from flask import Flask, session, redirect, request, url_for, render_template
 from flask_session import FileSystemSessionInterface
@@ -10,8 +10,8 @@ from itsdangerous import want_bytes
 
 
 app = Flask(__name__)
-app.config.from_object(app_config)
-
+app.config.from_object(config.FlaskConfig)
+app_config = config.AppConfig()
 
 class CustomFileSystemSessionInterface(FileSystemSessionInterface):
     def save_session(self, app, session, response):
@@ -37,7 +37,7 @@ class CustomFileSystemSessionInterface(FileSystemSessionInterface):
                              .format(app.session_cookie_name, session_id, expires, sam_site))
 
 
-# Default initialization values from library
+# Initialization with default values from library
 app.session_interface = CustomFileSystemSessionInterface(
     cache_dir=os.path.join(os.getcwd(), 'flask_session'), threshold=500, mode=384,
     key_prefix='session:', use_signer=False, permanent=True
@@ -49,11 +49,27 @@ def index():
     if not session.get("user"):
         return render_template("auth.html", base_uri=app_config.BASE_URI)
 
-    assignments = _get_assignments()
-    if not assignments:
+    token = _get_token_from_cache(app_config.SCOPE)
+    group_id = session.get("group_id")
+    
+    if not token or not group_id:
         return render_template("auth.html", base_uri=app_config.BASE_URI)
 
-    # print(assignments['value'][3])
+    assignments = get_assignments(token, group_id)    
+    for v in preprocessing_assignments(assignments['value']):
+        print("{0}\n".format(v))
+
+
+    # subm1 = get_submissions(token, group_id, assignments['value'][0]['id'])['value']
+    # print(subm1)
+    # print()
+    # subm2 = get_submissions(token, group_id, assignments['value'][1]['id'])['value']
+    # print(subm2)
+    # print()
+    # subm3 = get_submissions(token, group_id, assignments['value'][2]['id'])['value']
+    # print(subm3)
+    # print()
+
     return render_template("index.html", base_uri=app_config.BASE_URI,
                            assignments=assignments['value'])
 
@@ -107,57 +123,58 @@ def get_context():
         # return redirect(url_for("index"))
     group_id = request.form["group_id"]
     session["group_id"] = group_id
-    print("***Group ID: " + str(group_id))
     return group_id
 
 
-@app.route('/sync', methods=['POST'])
-def synchronize_assignents():
+@app.route('/sync')
+def synchronize_assignments():
     if not session.get('user'):
-        return None
+        return redirect(url_for('index'))
 
-     
-
-    return "success", 200
-
-# @app.route('/graph')
-# def graph_call():
-#     token = _get_token_from_cache(app_config.SCOPE)
-#     if not token:
-#         return redirect(url_for('index'))
-#     graph_data = requests.get(
-#         'https://graph.microsoft.com/beta/education/classes',
-#         headers={'Authorization': 'Bearer ' + token['access_token']},
-#     ).json()
-#     print(graph_data)
-#     return redirect(url_for('index'))
-#
-
-# @app.route('/assignments')
-# def get_assignments():
-#     token = _get_token_from_cache(app_config.SCOPE)
-#     if not token:
-#         return redirect(url_for('index'))
-#     url_query = "https://graph.microsoft.com/beta/education/classes/" + \
-#                 session['group_id'] + \
-#                 "/assignments"
-#     data = requests.get(
-#         url_query,
-#         headers={'Authorization': 'Bearer ' + token['access_token']},
-#     ).json()
-#     print(data)
-#     return redirect(url_for('index'))
-
-
-# @app.route('/getcontext')
-# def context_call():
-#     return render_template('context.html')
-#
-
-def _get_assignments():
-    token = _get_token_from_cache(app_config.SCOPE)
     group_id = session.get("group_id")
-    # print("Token: {0},\nGroupID: {1}".format(token, group_id))
+    token = _get_token_from_cache(app_config.SCOPE)
+    if not token or not group_id:
+        return redirect(url_for('index'))
+
+    assignments = _get_assignments(token, group_id)['value']
+    if not assignments:
+        return redirect(url_for('index'))
+    
+    assignments_pp = preprocessing_assignments(assignments)
+    for assign in assignments_pp:
+        submissions = get_submissions(token, group_id, assign['id'])['value']
+        if susbmissions:
+          submissions_pp = preprocessing_submissions(submissions)
+        else:
+            submissions_pp = []
+        assign['submissions'] = submissions_pp
+    print(assignments)
+    r = requests.post(
+        app_config.SYNC_URI,
+        data={'assignments': assignments_pp, 'class_id': group_id}
+    )
+    if r.ok:
+        return render_template('sync_success.html', base_uri=app_config.BASE_URI)
+    else:
+        return render_template('sync_failure.html', base_uri=app_config.BASE_URI)
+
+
+def get_members(token=None, group_id=None):
+    # group_id = session.get("group_id")
+    if not token or not group_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + \
+                group_id + \
+                "/members"
+    members = requests.get(
+        url_query,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    ).json()
+    return members
+
+
+def get_assignments(token=None, group_id=None):
     if not token or not group_id:
         return None
     url_query = "https://graph.microsoft.com" + \
@@ -169,6 +186,53 @@ def _get_assignments():
         headers={'Authorization': 'Bearer ' + token['access_token']},
     ).json()
     return assignments
+
+# GET /education/classes/{id}/assignments/{id}/submissions/
+def get_submissions(token=None, group_id=None, assignment_id=None):
+    if not token or not group_id or not assignment_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + group_id + \
+                "/assignments/" + assignment_id + \
+                "/submissions"
+    submissions = requests.get(
+        url_query,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    ).json()
+    return submissions
+
+
+def preprocessing_assignments(assignments):
+    result = [
+        {
+            'id': assign['id'],
+            'displayName': assign['displayName'],
+            'dueDateTime': assign['dueDateTime'],
+            'assignedDateTime': assign['assignedDateTime'],
+            'status': assign['status'],
+            'grading': assign['grading'],
+        } for assign in assignments]
+    return result
+
+
+def preprocessing_submissions(submissions):
+    result = [
+        {
+            'id': sub['id'],
+            'status': sub['status'],
+            'userId': sub['recipient']['userId']
+        } for sub in submission]
+    return result
+
+
+def preprocessing_members(members):
+    result = [
+        {
+            'id': member['id'],
+            'userPrincipalName': member['userPrincipalName'],
+            'userType': member['userType']
+        } for member in members]
+    return result 
 
 
 def _build_msal_app(cache=None) -> msal.ConfidentialClientApplication:
@@ -210,3 +274,4 @@ def _total_seconds(td):
 
 if __name__ == '__main__':
     app.run(port=9000)
+    # app.run(host='0.0.0.0')

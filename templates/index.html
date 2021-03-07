@@ -35,8 +35,12 @@
                     <div class="message-header">
                         <p>{{ assignment['displayName'] }}</p>
                     </div>
-                    <div class="message-body">
-                        <p><strong>Due date:</strong> {{ assignment['dueDateTime'] }}</p>
+                    <div class="message-body box">
+                        <p><strong>Assigned date time:</strong> {{ assignment['assignedDateTime'] }}</p>
+                        <p><strong>Due date time:</strong> {{ assignment['dueDateTime'] }}</p>
+                        {% if assignment['grading'] %}
+                        <p><strong>Max points:</strong> {{ assignment['grading']['maxPoints'] }}</p>
+                        {% endif %}
                     </div>
                 </article>
             {% endfor %}
