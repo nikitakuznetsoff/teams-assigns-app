@@ -14,4 +14,5 @@ class AppConfig:
     # TOKEN_ENDPOINT = "/oauth2/v2.0/token"
     BASE_URI = "https://f339d1a60a00.ngrok.io"
     REQUEST_URI = "https://f339d1a60a00.ngrok.io/token"
-    SYNC_URI = "https://194.87.110.241:5005/sync"
+    # SYNC_URI = "https://194.87.110.241:5005"
+    SYNC_URI = "http://localhost:5000"

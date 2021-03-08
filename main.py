@@ -56,20 +56,33 @@ def index():
         return render_template("auth.html", base_uri=app_config.BASE_URI)
 
     assignments = get_assignments(token, group_id)    
-    for v in preprocessing_assignments(assignments['value']):
-        print("{0}\n".format(v))
+    # for v in preprocessing_assignments(assignments['value']):
+    #     print("{0}\n".format(v))
 
 
     # subm1 = get_submissions(token, group_id, assignments['value'][0]['id'])['value']
     # print(subm1)
     # print()
+    # for v in subm1:
+    #     print(print(get_outcomes(token, group_id, assignments['value'][0]['id'], v['id'])))
+    #     print()
+    # print()
+    
     # subm2 = get_submissions(token, group_id, assignments['value'][1]['id'])['value']
     # print(subm2)
     # print()
+    # for v in subm2:
+    #     print(print(get_outcomes(token, group_id, assignments['value'][1]['id'], v['id'])))
+    #     print()
+    # print()
+    
     # subm3 = get_submissions(token, group_id, assignments['value'][2]['id'])['value']
     # print(subm3)
     # print()
-
+    # for v in subm3:
+    #     print(print(get_outcomes(token, group_id, assignments['value'][2]['id'], v['id'])))
+    #     print()
+    # print()
     return render_template("index.html", base_uri=app_config.BASE_URI,
                            assignments=assignments['value'])
 
@@ -136,27 +149,66 @@ def synchronize_assignments():
     if not token or not group_id:
         return redirect(url_for('index'))
 
-    assignments = _get_assignments(token, group_id)['value']
+    assignments = get_assignments(token, group_id)['value']
     if not assignments:
         return redirect(url_for('index'))
     
     assignments_pp = preprocessing_assignments(assignments)
     for assign in assignments_pp:
         submissions = get_submissions(token, group_id, assign['id'])['value']
-        if susbmissions:
+        if submissions:
           submissions_pp = preprocessing_submissions(submissions)
         else:
             submissions_pp = []
         assign['submissions'] = submissions_pp
-    print(assignments)
+    print("*")
+
+    # Sending to sync service
     r = requests.post(
-        app_config.SYNC_URI,
-        data={'assignments': assignments_pp, 'class_id': group_id}
+        app_config.SYNC_URI + "/syncpush",
+        json={'assignments': assignments_pp, 'class_id': group_id}
     )
-    if r.ok:
-        return render_template('sync_success.html', base_uri=app_config.BASE_URI)
-    else:
+    if not r.ok:
         return render_template('sync_failure.html', base_uri=app_config.BASE_URI)
+    print("Data was sended!!!")
+
+    # Receiving from sync service
+    # {'submissions': [{'id', 'student_id', 'assignment_id', 'mark'}]}
+    r = requests.get(app_config.SYNC_URI + "/syncget")
+    if not r.ok:
+        return render_template('sync_failure.html', base_uri=app_config.BASE_URI)
+    print("Data was received!!!")
+    submissions = r.json()
+    # print(submissions)
+    
+    for submission in submissions['submissions']:
+        # if submission['status'] == 'working':
+        #     continue
+        outcome_id = get_mark_outcome(
+            token=token, 
+            group_id=group_id, 
+            assignment_id=submission['assignment_id'], 
+            submission_id=submission['id'])
+        # print(outcome_id)
+        if not outcome_id:
+            continue 
+        res = update_outcome(
+            token=token, 
+            group_id=group_id, 
+            assignment_id=submission['assignment_id'], 
+            submission_id=submission['id'],
+            outcome_id=outcome_id,
+            mark=submission['mark'])
+        # print(res)
+        if res:
+            status = return_submission(
+                token=token, 
+                group_id=group_id, 
+                assignment_id=submission['assignment_id'], 
+                submission_id=submission['id'])
+            # print(status)
+        
+    return render_template('sync_success.html', base_uri=app_config.BASE_URI)
 
 
 def get_members(token=None, group_id=None):
@@ -201,6 +253,96 @@ def get_submissions(token=None, group_id=None, assignment_id=None):
     ).json()
     return submissions
 
+# GET /education/classes/{id}/assignments/{id}/submissions/{id}
+def get_submission(token=None, group_id=None, assignment_id=None, submission_id=None):
+    if not token or not group_id or not assignment_id or not submission_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + group_id + \
+                "/assignments/" + assignment_id + \
+                "/submissions/" + submission_id
+    submission = requests.get(
+        url_query,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    ).json()
+    return submission
+
+
+def get_outcomes(token=None, group_id=None, assignment_id=None, submission_id=None):
+    if not token or not group_id or not assignment_id or not submission_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + group_id + \
+                "/assignments/" + assignment_id + \
+                "/submissions/" + submission_id + "/outcomes"
+    submission = requests.get(
+        url_query,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    ).json()
+    return submission
+
+
+def get_mark_outcome(token=None, group_id=None, assignment_id=None, submission_id=None):
+    if not token or not group_id or not assignment_id or not submission_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + group_id + \
+                "/assignments/" + assignment_id + \
+                "/submissions/" + submission_id + "/outcomes"
+    outcomes = requests.get(
+        url_query,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    ).json()
+    print(outcomes)
+    if not outcomes:
+        return None
+
+    for outcome in outcomes['value']:
+        if outcome["@odata.type"] == "#microsoft.graph.educationPointsOutcome":
+            return outcome['id']
+    return None
+
+
+def update_outcome(token=None, group_id=None, assignment_id=None,
+    submission_id=None, outcome_id=None, mark=None):
+    if not token or not group_id or not assignment_id or not submission_id or not outcome_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + group_id + \
+                "/assignments/" + assignment_id + \
+                "/submissions/" + submission_id + \
+                "/outcomes/" + outcome_id
+    
+    data = {
+        "@odata.type":"#microsoft.graph.educationPointsOutcome",
+        "points":{
+            "@odata.type":"#microsoft.graph.educationAssignmentPointsGrade",
+            "points":mark
+        }
+    }
+    
+    res = requests.patch(
+        url_query,
+        json=data,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    )
+    print(res.status_code)
+    return res.ok
+
+
+def return_submission(token=None, group_id=None, assignment_id=None, submission_id=None):
+    if not token or not group_id or not assignment_id or not submission_id:
+        return None
+    url_query = "https://graph.microsoft.com" + \
+                "/beta/education/classes/" + group_id + \
+                "/assignments/" + assignment_id + \
+                "/submissions/" + submission_id + "/return"
+    res = requests.post(
+        url_query,
+        headers={'Authorization': 'Bearer ' + token['access_token']},
+    )
+    return res.status_code == 204
+
 
 def preprocessing_assignments(assignments):
     result = [
@@ -221,7 +363,7 @@ def preprocessing_submissions(submissions):
             'id': sub['id'],
             'status': sub['status'],
             'userId': sub['recipient']['userId']
-        } for sub in submission]
+        } for sub in submissions]
     return result
 
 
