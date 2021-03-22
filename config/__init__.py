@@ -1,7 +1,9 @@
 class FlaskConfig:
     SESSION_TYPE = "filesystem"
+    SECRET_KEY = "123"
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "None"
 
 
 class AppConfig:
@@ -12,7 +14,7 @@ class AppConfig:
     AUTHORITY = "https://login.microsoftonline.com/"+TENANT
     # AUTHORIZE_ENDPOINT = "/oauth2/v2.0/authorize"
     # TOKEN_ENDPOINT = "/oauth2/v2.0/token"
-    BASE_URI = "https://f339d1a60a00.ngrok.io"
-    REQUEST_URI = "https://f339d1a60a00.ngrok.io/token"
-    # SYNC_URI = "https://194.87.110.241:5005"
-    SYNC_URI = "http://localhost:5000"
+    BASE_URI = "https://194.87.111.119:6000"
+    REQUEST_URI = "https://194.87.111.119:6000/token"
+    # SYNC_URI = "http://194.87.110.241:5005"
+    SYNC_URI = "http://194.87.111.119:5000"

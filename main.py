@@ -4,10 +4,10 @@ import uuid
 import msal
 import config
 
-from flask import Flask, session, redirect, request, url_for, render_template
+from flask import Flask, session, redirect, request, url_for, render_template, Response
 from flask_session import FileSystemSessionInterface
 from itsdangerous import want_bytes
-
+from werkzeug import Response
 
 app = Flask(__name__)
 app.config.from_object(config.FlaskConfig)
@@ -21,10 +21,13 @@ class CustomFileSystemSessionInterface(FileSystemSessionInterface):
             if session.modified:
                 self.cache.delete(self.key_prefix + session.sid)
                 response.delete_cookie(app.session_cookie_name,
-                                       domain=domain, path=path)
+                                       domain=domain, 
+                                       path=path)
             return
-
+        httponly = self.get_cookie_httponly(app)
+        secure = self.get_cookie_secure(app)
         expires = self.get_expiration_time(app, session)
+        samesite = self.get_cookie_samesite(app)
         data = dict(session)
         self.cache.set(self.key_prefix + session.sid, data,
                        _total_seconds(app.permanent_session_lifetime))
@@ -32,9 +35,10 @@ class CustomFileSystemSessionInterface(FileSystemSessionInterface):
             session_id = self._get_signer(app).sign(want_bytes(session.sid))
         else:
             session_id = session.sid
-        sam_site = 'None'
-        response.headers.add('Set-Cookie', '{0}={1}; Expires={2}; SameSite={3}; Secure; HttpOnly; Path=/'
-                             .format(app.session_cookie_name, session_id, expires, sam_site))
+        response.set_cookie(app.session_cookie_name, session_id,
+                            expires=expires, httponly=httponly,
+                            domain=domain, path=path, 
+                            secure=secure, samesite=samesite)
 
 
 # Initialization with default values from library
@@ -56,33 +60,7 @@ def index():
         return render_template("auth.html", base_uri=app_config.BASE_URI)
 
     assignments = get_assignments(token, group_id)    
-    # for v in preprocessing_assignments(assignments['value']):
-    #     print("{0}\n".format(v))
 
-
-    # subm1 = get_submissions(token, group_id, assignments['value'][0]['id'])['value']
-    # print(subm1)
-    # print()
-    # for v in subm1:
-    #     print(print(get_outcomes(token, group_id, assignments['value'][0]['id'], v['id'])))
-    #     print()
-    # print()
-    
-    # subm2 = get_submissions(token, group_id, assignments['value'][1]['id'])['value']
-    # print(subm2)
-    # print()
-    # for v in subm2:
-    #     print(print(get_outcomes(token, group_id, assignments['value'][1]['id'], v['id'])))
-    #     print()
-    # print()
-    
-    # subm3 = get_submissions(token, group_id, assignments['value'][2]['id'])['value']
-    # print(subm3)
-    # print()
-    # for v in subm3:
-    #     print(print(get_outcomes(token, group_id, assignments['value'][2]['id'], v['id'])))
-    #     print()
-    # print()
     return render_template("index.html", base_uri=app_config.BASE_URI,
                            assignments=assignments['value'])
 
@@ -106,7 +84,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(app_config.BASE_URI)
 
 
 @app.route('/token')
