@@ -14,7 +14,9 @@ class AppConfig:
     AUTHORITY = "https://login.microsoftonline.com/"+TENANT
     # AUTHORIZE_ENDPOINT = "/oauth2/v2.0/authorize"
     # TOKEN_ENDPOINT = "/oauth2/v2.0/token"
-    BASE_URI = "https://194.87.111.119:6000"
-    REQUEST_URI = "https://194.87.111.119:6000/token"
-    # SYNC_URI = "http://194.87.110.241:5005"
-    SYNC_URI = "http://194.87.111.119:5000"
+    # BASE_URI = "https://194.87.111.119:6000"
+    # REQUEST_URI = "https://194.87.111.119:6000/token"
+    BASE_URI = "https://d77702101852.ngrok.io"
+    REQUEST_URI = "https://d77702101852.ngrok.io/token"
+    # SYNC_URI = "http://194.87.111.119:5000"
+    SYNC_URI = "http://localhost:5000"

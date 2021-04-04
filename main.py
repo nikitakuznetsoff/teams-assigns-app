@@ -154,6 +154,7 @@ def synchronize_assignments():
     # {'submissions': [{'id', 'student_id', 'assignment_id', 'mark'}]}
     r = requests.get(app_config.SYNC_URI + "/syncget")
     if not r.ok:
+        print('***')
         return render_template('sync_failure.html', base_uri=app_config.BASE_URI)
     print("Data was received!!!")
     submissions = r.json()
